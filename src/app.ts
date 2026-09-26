@@ -41,6 +41,7 @@ export class App {
   frames = 0;
   rotateHint = false;
   private safeProbe: HTMLElement;
+  private sizeKey = '';
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -72,7 +73,14 @@ export class App {
     return { x: (cx - this.left) / this.scale, y: cy / this.scale };
   }
 
+  /** 홈 화면(PWA) 실행 직후 iOS가 화면 크기/세이프 에어리어를 늦게 알려 주는 경우를 대비해 주기적으로 확인 */
+  private viewportKey() {
+    const cs = getComputedStyle(this.safeProbe);
+    return [window.innerWidth, window.innerHeight, window.devicePixelRatio, cs.paddingTop, cs.paddingBottom, cs.paddingLeft, cs.paddingRight].join();
+  }
+
   resize() {
+    this.sizeKey = this.viewportKey();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     // 세로가 긴 폰 화면은 꽉 채우고, 가로로 넓은 화면(태블릿/PC)은 폰 비율로 가운데 표시
@@ -144,6 +152,7 @@ export class App {
     this.lastPerf = perf;
     this.real += dt;
     this.frames++;
+    if (this.frames % 30 === 0 && this.viewportKey() !== this.sizeKey) this.resize();
     audio.sampleClock(perf);
     if (this.fadeDir !== 0) {
       this.fade += this.fadeDir * dt * this.fadeSpeed;

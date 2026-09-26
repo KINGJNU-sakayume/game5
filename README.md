@@ -38,7 +38,7 @@ GitHub Actions가 테스트 → 빌드 → GitHub Pages 배포까지 자동으�
 
 ## 📱 아이폰에서 전체 화면으로 플레이하기
 
-1. 배포된 주소(`https://<사용자>.github.io/<저장소>/`)를 **Safari**로 엽니다.
+1. 배포된 주소를 **Safari**로 엽니다. (이 저장소: `https://kingjnu-sakayume.github.io/game5/`)
 2. **공유 버튼 → "홈 화면에 추가"**
 3. 홈 화면 아이콘으로 실행하면 주소창 없이 **화면 전체(다이나믹 아일랜드·홈 인디케이터 영역까지)**를 채웁니다.
    - `viewport-fit=cover` + `black-translucent` 상태 막대 + 세이프 에어리어 대응
@@ -57,7 +57,7 @@ GitHub Actions가 테스트 → 빌드 → GitHub Pages 배포까지 자동으�
 | `test` | 타입 검사, 단위 테스트(15개 스테이지 모두 자동 플레이 100점·모든 장면 그리기 검증), 빌드, 결과물 업로드 |
 | `e2e` | Playwright(Chromium)로 **iPhone 15 Pro(393×852 @3x)** 화면에서 캔버스가 1179×2556으로 꽉 차는지, 메뉴·게임·결과 화면까지 실제로 플레이되는지 검사 (스크린샷 아티팩트) |
 | `e2e-webkit` | 같은 검사를 **WebKit(Safari 엔진)** + 아이폰 15 Pro 프로필로 한 번 더 |
-| `deploy` | 기본 브랜치에 push 되면 GitHub Pages로 자동 배포 |
+| `deploy` | 기본 브랜치에 push 되면 GitHub Pages로 자동 배포 (Pages가 아직 꺼져 있으면 설정 방법을 경고로 안내하고 건너뜀) |
 
 **처음 한 번만** 저장소 **Settings → Pages → Build and deployment → Source** 를 **GitHub Actions** 로 바꿔 주세요.
 그 뒤 Actions 탭에서 워크플로를 다시 실행(Re-run)하면 배포됩니다.
@@ -83,8 +83,8 @@ PC에서는 `Space` = 탭(누르고 있으면 홀드), `F`/`J` = 왼쪽/오른�
 ```
 src/
   core/        오디오 합성·곡 렌더링, 채보 빌더, 판정, 입력(탭/뗌/플릭), 그리기, 저장
-  games/       미니게임 8개 + 리믹스
-  screens/     타이틀, 메뉴, 연습/플레이, 결과, 설정/타이밍 보정
+  games/       미니게임 12개 + 리믹스 3개
+  screens/     타이틀, 메뉴, 연습/플레이, 결과, 설정/타이밍 보정, 엔딩
 tests/         단위 테스트 (vitest)
 e2e/           아이폰 15 Pro 화면 E2E 테스트 (Playwright)
 scripts/       아이콘/스플래시 생성, 서비스 워커 템플릿
