@@ -13,6 +13,8 @@ export interface GameRecord {
 export interface Settings {
   /** 입력 타이밍 보정 (초, +면 늦게 누르는 편) */
   calib: number;
+  /** 사용자가 직접 보정했는지 (아니면 기기별 기본값 사용) */
+  calibUser: boolean;
   music: number;
   sfx: number;
   showTiming: boolean;
@@ -32,7 +34,7 @@ export function defaultSave(): SaveData {
   return {
     v: 1,
     games: {},
-    settings: { calib: 0, music: 0.8, sfx: 0.9, showTiming: false, unlockAll: false },
+    settings: { calib: 0, calibUser: false, music: 0.8, sfx: 0.9, showTiming: false, unlockAll: false },
     lastGame: null,
   };
 }
@@ -82,4 +84,21 @@ export function resetSave(): void {
   data = defaultSave();
   data.settings = settings;
   save();
+}
+
+/**
+ * 기기별 기본 보정값.
+ * iOS Safari는 출력 지연(outputLatency)을 알려주지 않는 경우가 많아서, 터치 + 스피커 지연을 감안함.
+ */
+export function defaultCalib(reportsOutputLatency = false): number {
+  if (typeof navigator === 'undefined') return 0;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) return reportsOutputLatency ? 0.02 : 0.04;
+  return 0.01;
+}
+
+/** 실제로 판정에 쓰는 보정값 */
+export function effectiveCalib(reportsOutputLatency = false): number {
+  const s = data.settings;
+  return s.calibUser ? s.calib : defaultCalib(reportsOutputLatency);
 }

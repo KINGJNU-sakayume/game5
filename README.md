@@ -50,7 +50,8 @@ GitHub Actions가 테스트 → 빌드 → GitHub Pages 배포까지 자동으�
 | 작업 | 내용 |
 | --- | --- |
 | `test` | 타입 검사, 단위 테스트(10개 게임 모두 자동 플레이 100점·모든 장면 그리기 검증), 빌드, 결과물 업로드 |
-| `e2e` | Playwright로 **iPhone 15 Pro(393×852 @3x)** 화면에서 캔버스가 1179×2556으로 꽉 차는지, 메뉴·게임·결과 화면까지 실제로 플레이되는지 검사 (스크린샷 아티팩트) |
+| `e2e` | Playwright(Chromium)로 **iPhone 15 Pro(393×852 @3x)** 화면에서 캔버스가 1179×2556으로 꽉 차는지, 메뉴·게임·결과 화면까지 실제로 플레이되는지 검사 (스크린샷 아티팩트) |
+| `e2e-webkit` | 같은 검사를 **WebKit(Safari 엔진)** + 아이폰 15 Pro 프로필로 한 번 더 |
 | `deploy` | 기본 브랜치에 push 되면 GitHub Pages로 자동 배포 |
 
 **처음 한 번만** 저장소 **Settings → Pages → Build and deployment → Source** 를 **GitHub Actions** 로 바꿔 주세요.

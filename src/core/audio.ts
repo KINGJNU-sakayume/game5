@@ -86,15 +86,23 @@ export class SoundBank {
       const buf = await renderOffline(oac);
       this.map.set(key, buf.getChannelData(0).slice(0));
     };
-    const LIMIT = 12;
+    // iOS에서 오프라인 컨텍스트를 너무 많이 동시에 만들지 않도록 제한
+    const LIMIT = 6;
     let idx = 0;
+    const failed: (typeof entries)[number][] = [];
     const worker = async () => {
       while (idx < entries.length) {
         const e = entries[idx++];
-        await one(e);
+        try {
+          await one(e);
+        } catch {
+          failed.push(e);
+        }
       }
     };
     await Promise.all(Array.from({ length: Math.min(LIMIT, entries.length) }, worker));
+    // 실패한 소리는 하나씩 다시 시도
+    for (const e of failed) await one(e);
   }
 }
 
@@ -463,6 +471,12 @@ export class AudioEngine {
     if (!this.haveDelta) this.sampleClock(perfMs);
     if (!this.haveDelta) return this.ctx.currentTime;
     return perfMs / 1000 + this.delta;
+  }
+
+  /** 브라우저가 출력 지연을 알려주는지 */
+  get reportsOutputLatency(): boolean {
+    const c = this.ctx as (AudioContext & { outputLatency?: number }) | null;
+    return !!c && typeof c.outputLatency === 'number' && c.outputLatency > 0;
   }
 
   /** 출력 지연 (스피커로 실제 들리기까지) */

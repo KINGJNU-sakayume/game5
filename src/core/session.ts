@@ -4,7 +4,7 @@ import { ChartBuilder, type Chart, type Cue, type InputKind, type Marker } from 
 import { Judge, type ScoreResult } from './judge';
 import type { Frame, GameDef, GameInput, Scene, SceneCtx, SceneMode } from './game';
 import type { RawInput } from './input';
-import { getSave } from './save';
+import { effectiveCalib } from './save';
 
 /** 마지막으로 렌더링한 곡 (다시 하기용) */
 let songCache: { id: string; sr: number; buffer: AudioBuffer } | null = null;
@@ -136,7 +136,7 @@ abstract class BaseSession {
   }
 
   get calib(): number {
-    return getSave().settings.calib;
+    return effectiveCalib(audio.reportsOutputLatency);
   }
 
   frame(f: Omit<Frame, 't' | 'beat'>, perf: number): Frame {

@@ -7,6 +7,8 @@ import { TitleScreen } from './screens/title';
 import { PlayScreen } from './screens/play';
 import { MenuScreen } from './screens/menu';
 import { PreviewScreen, type PreviewGrade } from './screens/preview';
+import { ResultScreen } from './screens/results';
+import { simulate } from './core/simulate';
 import { bgm, COMMON_SFX } from './bgm';
 
 loadSave();
@@ -39,6 +41,13 @@ w.__rs = {
   },
   menu() {
     app.go(new MenuScreen(app), '#000', 0.05);
+  },
+  /** 결과 화면 미리보기: grade = just | barely | miss | mixed */
+  result(id: string, grade: PreviewGrade = 'mixed') {
+    const def = gameById(id);
+    if (!def) throw new Error('no game ' + id);
+    const sim = simulate(def, 1e9, grade);
+    app.go(new ResultScreen(app, def, sim.judge.result(), { perfect: false }), '#000', 0.05);
   },
   state() {
     const sc = app.screen as unknown as { id?: string; debugState?: () => unknown };

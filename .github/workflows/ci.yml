@@ -70,8 +70,6 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Safari 엔진 호환성 확인용 (배포를 막지는 않음)
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -99,7 +97,7 @@ jobs:
 
   deploy:
     name: GitHub Pages 배포
-    needs: [test, e2e]
+    needs: [test, e2e, e2e-webkit]
     # 기본 브랜치에 push 하거나 수동 실행했을 때만 배포
     if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest

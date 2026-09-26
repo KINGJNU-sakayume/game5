@@ -4,7 +4,7 @@ import { audio, renderSong } from '../core/audio';
 import { ChartBuilder } from '../core/chart';
 import { OUT, circle, rrect, text, wrapText, type G, type View } from '../core/gfx';
 import type { RawInput } from '../core/input';
-import { getSave, resetSave, save } from '../core/save';
+import { effectiveCalib, getSave, resetSave, save } from '../core/save';
 import { clamp, clamp01, easeOutBack, frac } from '../core/util';
 import { button, drawBackIcon, drawButton, handleButtons, hit, type Button } from '../ui';
 import { nightSky } from './backdrop';
@@ -110,10 +110,11 @@ export class SettingsScreen implements Screen {
     drawBackIcon(g, this.back.x + 22, this.back.y + 22, 40);
     text(g, '설정', W / 2, safe.t + 32, 26, '#fff', { weight: 900, stroke: OUT, strokeW: 6 });
     const s = getSave().settings;
+    const calibNow = effectiveCalib(audio.reportsOutputLatency);
     const y0 = safe.t + 84;
     const rowH = 76;
     const rows: [string, string][] = [
-      ['타이밍 보정', `${s.calib >= 0 ? '+' : ''}${Math.round(s.calib * 1000)}ms`],
+      ['타이밍 보정', `${calibNow >= 0 ? '+' : ''}${Math.round(calibNow * 1000)}ms${s.calibUser ? '' : ' (기기 기본값)'}`],
       ['음악 볼륨', `${Math.round(s.music * 100)}%`],
       ['효과음 볼륨', `${Math.round(s.sfx * 100)}%`],
       ['빠름/늦음 표시', '본 게임 중 표시'],
@@ -221,6 +222,7 @@ export class CalibrationScreen implements Screen {
         color: '#6be3a0',
         onTap: () => {
           getSave().settings.calib = this.result ?? 0;
+          getSave().settings.calibUser = true;
           save();
           this.leave();
         },

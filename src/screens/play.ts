@@ -83,6 +83,8 @@ export class PlayScreen implements Screen {
       freeSongSamples(this.def.id);
       if (this.practice) await this.practice.load();
       await this.session.load();
+      // 렌더링이 끝난 악기 샘플은 메모리에서 해제 (효과음과 완성된 곡은 유지)
+      freeSongSamples(this.def.id);
       this.loaded = true;
     } catch (e) {
       console.error(e);
