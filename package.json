@@ -1,0 +1,24 @@
+{
+  "name": "rhythm-starland",
+  "private": true,
+  "version": "1.0.0",
+  "description": "리듬 별나라 - 아이폰 화면에 꽉 차는 모바일 리듬 게임 (PWA)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run test && npm run build",
+    "assets": "node scripts/gen-assets.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.20.4",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}
