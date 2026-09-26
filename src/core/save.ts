@@ -19,6 +19,12 @@ export interface Settings {
   sfx: number;
   showTiming: boolean;
   unlockAll: boolean;
+  /**
+   * 성공 효과음 재생 시점
+   * - beat: 음악과 같은 오디오 시계로 박자에 맞춰 미리 예약 (출력 지연이 있어도 정박에 들림)
+   * - tap: 누른 순간 재생 (기기 출력 지연만큼 늦게 들릴 수 있음)
+   */
+  hitTiming: 'beat' | 'tap';
 }
 
 export interface SaveData {
@@ -34,7 +40,7 @@ export function defaultSave(): SaveData {
   return {
     v: 1,
     games: {},
-    settings: { calib: 0, calibUser: false, music: 0.8, sfx: 0.9, showTiming: false, unlockAll: false },
+    settings: { calib: 0, calibUser: false, music: 0.8, sfx: 0.9, showTiming: false, unlockAll: false, hitTiming: 'beat' },
     lastGame: null,
   };
 }

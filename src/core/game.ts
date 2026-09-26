@@ -29,8 +29,21 @@ export interface SceneCtx {
   markers: Marker[];
   segments: Segment[];
   mode: SceneMode;
+  /** 효과음을 지금 바로 재생 */
   sfx(name: string, midi?: number, vel?: number, pan?: number): { stop(fade?: number): void } | null;
+  /** 효과음을 곡 시각 t(초)에 맞춰 재생 (이미 지났으면 바로) */
+  sfxAt(t: number, name: string, midi?: number, vel?: number, pan?: number): { stop(fade?: number): void } | null;
   holding(): boolean;
+}
+
+/** 큐를 정확히 맞혔을 때 나는 소리 */
+export interface HitSfx {
+  name: string;
+  midi?: number;
+  vel?: number;
+  pan?: number;
+  /** 큐 시각보다 몇 초 뒤에 울릴지 (예: 불꽃이 터지는 소리) */
+  delay?: number;
 }
 
 export interface GameInput extends JudgeInput {
@@ -44,6 +57,12 @@ export interface Scene {
   /** 판정 직후 (cue=null이면 헛손질) */
   onInput?(ev: GameInput, cue: Cue | null): void;
   onMiss?(cue: Cue): void;
+  /**
+   * 이 큐를 정확히(Just) 맞혔을 때 나는 소리.
+   * 세션이 음악과 같은 오디오 시계로 큐 시각에 미리 예약하므로, 출력 지연이 있어도 박자에 딱 맞게 들린다.
+   * (아슬아슬/미스 소리는 onInput/onMiss에서 직접 재생)
+   */
+  hitSfx?(cue: Cue): HitSfx | HitSfx[] | null;
   /** 손가락을 누를 때/뗄 때 (판정과 별개) */
   onDown?(ev: GameInput): void;
   onUp?(ev: GameInput): void;

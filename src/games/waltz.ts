@@ -245,6 +245,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: () => ({ name: 'twinkle', midi: 84 }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       lastTap = ev.time;
@@ -254,8 +255,8 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
+        // 성공음(반짝)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
-        sc.sfx('twinkle', 84, 1);
         fx.burst(p.x, p.y, 12, { kind: 'spark', r: 7, speed: 200, colors: ['#fff27a', '#ffffff', '#ff9ad5', '#8fd0ff'], max: 0.7 });
       } else {
         sc.sfx('twinkle', 72, 0.5);

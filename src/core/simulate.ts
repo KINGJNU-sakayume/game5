@@ -26,6 +26,7 @@ export function simulate(def: GameDef, upTo: number, grade: SimGrade = 'just', c
     segments: chart.segments,
     mode: 'preview',
     sfx: () => null,
+    sfxAt: () => null,
     holding: () => hold,
   };
   const scene = def.createScene(sc);

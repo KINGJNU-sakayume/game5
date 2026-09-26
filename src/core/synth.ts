@@ -127,7 +127,7 @@ function vox(
   f1: number,
   vowels: string[],
   dur: number,
-  opts: { vol?: number } = {},
+  opts: { vol?: number; punch?: boolean } = {},
 ) {
   const end = t + dur + 0.08;
   const src = ac.createOscillator();
@@ -139,9 +139,17 @@ function vox(
   const amp = gain(ac, 0);
   const vol = opts.vol ?? 1;
   amp.gain.setValueAtTime(0, t);
-  amp.gain.linearRampToValueAtTime(vol, t + 0.02);
-  amp.gain.setValueAtTime(vol, t + dur * 0.7);
-  amp.gain.linearRampToValueAtTime(0, t + dur);
+  if (opts.punch) {
+    // 외치는 소리: 시작이 가장 크고 점점 줄어듦 → 박자가 소리의 시작에 느껴짐
+    amp.gain.linearRampToValueAtTime(vol * 1.3, t + 0.006);
+    amp.gain.linearRampToValueAtTime(vol * 0.75, t + Math.min(0.07, dur * 0.4));
+    amp.gain.linearRampToValueAtTime(vol * 0.5, t + dur * 0.75);
+    amp.gain.linearRampToValueAtTime(0, t + dur);
+  } else {
+    amp.gain.linearRampToValueAtTime(vol, t + 0.02);
+    amp.gain.setValueAtTime(vol, t + dur * 0.7);
+    amp.gain.linearRampToValueAtTime(0, t + dur);
+  }
   src.connect(amp);
   const mix = gain(ac, 1);
   const seg = dur / vowels.length;
@@ -1198,8 +1206,8 @@ const SFX: Record<string, InstDef> = {
     rev: 0.15,
     build(ac, o, t, m, _d, nz) {
       const f = m ? mtof(m) : 260;
-      voxNoise(ac, o, nz, t, 1500, 0.05, 0.5);
-      vox(ac, o, t + 0.03, f * 1.1, f * 0.9, ['e', 'i'], 0.22, { vol: 1 });
+      voxNoise(ac, o, nz, t, 1600, 0.025, 0.45);
+      vox(ac, o, t + 0.01, f * 1.12, f * 0.9, ['e', 'i'], 0.22, { vol: 1, punch: true });
     },
   },
   hup: {
@@ -1208,8 +1216,8 @@ const SFX: Record<string, InstDef> = {
     rev: 0.15,
     build(ac, o, t, m, _d, nz) {
       const f = m ? mtof(m) : 280;
-      voxNoise(ac, o, nz, t, 1200, 0.04, 0.5);
-      vox(ac, o, t + 0.025, f * 1.15, f, ['u'], 0.11, { vol: 1 });
+      voxNoise(ac, o, nz, t, 1200, 0.025, 0.45);
+      vox(ac, o, t + 0.01, f * 1.15, f, ['u'], 0.11, { vol: 1, punch: true });
     },
   },
   ha: {
@@ -1218,8 +1226,8 @@ const SFX: Record<string, InstDef> = {
     rev: 0.15,
     build(ac, o, t, m, _d, nz) {
       const f = m ? mtof(m) : 250;
-      voxNoise(ac, o, nz, t, 1400, 0.05, 0.5);
-      vox(ac, o, t + 0.03, f * 1.1, f * 0.95, ['a'], 0.16, { vol: 1 });
+      voxNoise(ac, o, nz, t, 1400, 0.025, 0.45);
+      vox(ac, o, t + 0.01, f * 1.1, f * 0.95, ['a'], 0.16, { vol: 1, punch: true });
     },
   },
 

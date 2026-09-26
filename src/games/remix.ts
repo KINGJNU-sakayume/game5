@@ -74,6 +74,9 @@ function createRemixScene(sc: SceneCtx, games: GameDef[]): Scene {
     onMiss(cue) {
       subs.get(cue.game)?.scene.onMiss?.(cue);
     },
+    hitSfx(cue) {
+      return subs.get(cue.game)?.scene.hitSfx?.(cue) ?? null;
+    },
     draw(g: G, f: Frame) {
       const beat = f.beat;
       const { cur, idx } = segAt(beat);

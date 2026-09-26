@@ -257,6 +257,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => (cue.input === 'flick' ? [{ name: 'hey', midi: 64 }, { name: 'cheer', vel: 0.8 }] : { name: 'clap', vel: 1.1 }),
     onInput(ev, cue) {
       if (ev.kind === 'tap') {
         if (!cue) {
@@ -268,7 +269,7 @@ function createScene(sc: SceneCtx): Scene {
         }
         myClap = ev.time;
         if (cue.grade === 'just') {
-          sc.sfx('clap', 0, 1.1);
+          // 성공음(짝)은 hitSfx로 박자에 맞춰 예약됨
           lastGood = ev.time;
         } else {
           sc.sfx('clap', 0, 0.5);
@@ -277,8 +278,7 @@ function createScene(sc: SceneCtx): Scene {
       } else if (ev.kind === 'flick') {
         myJump = ev.time;
         if (cue?.grade === 'just') {
-          sc.sfx('hey', 64, 1);
-          sc.sfx('cheer', 0, 0.8);
+          // 성공음(야호!)은 hitSfx로 박자에 맞춰 예약됨
           lastGood = ev.time;
         } else if (cue) sc.sfx('hup', 0, 0.6);
         else sc.sfx('whiff', 0, 0.6);

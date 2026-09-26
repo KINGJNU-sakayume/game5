@@ -1,10 +1,29 @@
 // 플레이/연습 세션: 곡 재생, 시계, 입력 → 판정, 자동 플레이
-import { audio, renderSong } from './audio';
+import { audio, renderSong, type SfxHandle } from './audio';
 import { ChartBuilder, type Chart, type Cue, type InputKind, type Marker } from './chart';
 import { Judge, type ScoreResult } from './judge';
-import type { Frame, GameDef, GameInput, Scene, SceneCtx, SceneMode } from './game';
+import type { Frame, GameDef, GameInput, HitSfx, Scene, SceneCtx, SceneMode } from './game';
 import type { RawInput } from './input';
-import { effectiveCalib } from './save';
+import { effectiveCalib, getSave } from './save';
+
+/** 성공음을 이만큼(초) 앞서 오디오 시계에 예약 */
+const HIT_LEAD = 0.3;
+/** 입력 없이 이만큼 연속으로 놓치면 성공음을 미리 예약하지 않음 (손을 놓은 플레이어에게 성공음이 들리지 않도록) */
+const IDLE_MISSES = 2;
+
+/** 박자에 맞춰 예약한 성공음 한 조각 */
+interface HitPart {
+  spec: HitSfx;
+  /** 울려야 하는 곡 시각 (초) */
+  songT: number;
+  /** 예약한 오디오 컨텍스트 시각 */
+  at: number;
+  h: SfxHandle | null;
+}
+
+function beatSynced(): boolean {
+  return getSave().settings.hitTiming !== 'tap';
+}
 
 /** 마지막으로 렌더링한 곡 (다시 하기용) */
 let songCache: { id: string; sr: number; buffer: AudioBuffer } | null = null;
@@ -104,6 +123,10 @@ abstract class BaseSession {
   lastInputTime = -99;
   lastJudged: Cue | null = null;
   spb: number;
+  /** 큐 id → 박자에 맞춰 예약한 성공음 (null: 예약하지 않음 → Just 판정이 나면 그때 재생) */
+  protected hits = new Map<number, HitPart[] | null>();
+  /** 입력 없이 연속으로 놓친 큐 수 */
+  protected idleMisses = 0;
 
   constructor(def: GameDef, holding: () => boolean) {
     this.def = def;
@@ -124,6 +147,7 @@ abstract class BaseSession {
       segments,
       mode,
       sfx: (name, midi = 0, vel = 1, pan = 0) => audio.sfx(name, midi, vel, 0, pan),
+      sfxAt: (t, name, midi = 0, vel = 1, pan = 0) => audio.sfx(name, midi, vel, this.ctxAt(t), pan),
       holding: () => this.holdingFn() || this.auto.hold,
     };
     this.scene = this.def.createScene(this.sc);
@@ -139,6 +163,105 @@ abstract class BaseSession {
     return effectiveCalib(audio.reportsOutputLatency);
   }
 
+  /** 곡 시각 → 음악 버퍼에서 그 순간이 재생되는 오디오 컨텍스트 시각 */
+  ctxAt(songT: number): number {
+    return this.startCtx + songT / this.rate;
+  }
+
+  // ------------------------------------------------ 성공음 (박자 동기)
+  // 누른 순간에 소리를 내면 [터치 지연 + 스피커/블루투스 출력 지연]만큼 늦게 들려 리듬이 밀린다.
+  // 그래서 성공음을 음악과 같은 오디오 시계로 큐 시각에 미리 예약해 두고,
+  // 판정이 Just면 그대로 두고, 아슬아슬/미스면 아직 울리기 전이면 취소, 이미 울리고 있으면 짧게 끊는다.
+
+  private hitSpecs(c: Cue): HitSfx[] {
+    const r = this.scene.hitSfx?.(c);
+    return !r ? [] : Array.isArray(r) ? r : [r];
+  }
+
+  private playPart(spec: HitSfx, songT: number, at: number): HitPart {
+    return { spec, songT, at, h: audio.sfx(spec.name, spec.midi ?? 0, spec.vel ?? 1, at, spec.pan ?? 0) };
+  }
+
+  /** 곧 다가올 큐의 성공음을 박자에 맞춰 미리 예약 (매 프레임) */
+  protected scheduleHits(cues: Cue[]) {
+    const ctx = audio.ctx;
+    if (!ctx || ctx.state !== 'running' || this.state !== 'playing' || !this.scene.hitSfx || !beatSynced()) return;
+    const now = ctx.currentTime;
+    for (const c of cues) {
+      const at = this.ctxAt(c.t);
+      if (at > now + HIT_LEAD) break;
+      if (c.grade || this.hits.has(c.id)) continue;
+      if (at < now + 0.004) {
+        // 예약하기엔 이미 늦음 → Just가 나면 그때 바로 재생
+        this.hits.set(c.id, null);
+        continue;
+      }
+      // 손을 놓고 있으면 미리 울리지 않음 / 뗌 큐는 누르고 있을 때만
+      if (this.idleMisses >= IDLE_MISSES) continue;
+      if (c.input === 'release' && !this.sc.holding()) continue;
+      this.hits.set(
+        c.id,
+        this.hitSpecs(c).map((spec) => {
+          const songT = c.t + (spec.delay ?? 0);
+          return this.playPart(spec, songT, this.ctxAt(songT));
+        }),
+      );
+    }
+  }
+
+  /** 판정 직후 (Judge.onJudge) */
+  protected hitJudged(c: Cue) {
+    if (c.grade === 'miss') this.idleMisses++;
+    const ctx = audio.ctx;
+    if (!ctx || !this.scene.hitSfx) return;
+    const parts = this.hits.get(c.id);
+    const now = ctx.currentTime;
+    if (c.grade === 'just') {
+      if (parts) return; // 이미 박자에 맞춰 예약됨
+      // 예약되지 않았으면: 박자 동기 모드는 박자가 아직이면 박자에, 지났으면 바로 / 즉시 모드는 바로
+      const snap = beatSynced();
+      this.hits.set(
+        c.id,
+        this.hitSpecs(c).map((spec) => {
+          const d = spec.delay ?? 0;
+          const songT = c.t + d;
+          return this.playPart(spec, songT, d > 0 || snap ? Math.max(now, this.ctxAt(songT)) : now);
+        }),
+      );
+      return;
+    }
+    if (parts) {
+      for (const p of parts) {
+        if (!p.h) continue;
+        if (p.at > now + 0.003) p.h.cancel();
+        else p.h.stop(0.05);
+        p.h = null;
+      }
+    }
+    this.hits.set(c.id, null);
+  }
+
+  /** 예약만 되어 있고 아직 울리지 않은 성공음을 모두 취소 */
+  protected cancelHits() {
+    const now = audio.ctx?.currentTime ?? 0;
+    for (const parts of this.hits.values()) {
+      if (!parts) continue;
+      for (const p of parts) {
+        if (p.h && p.at > now + 0.003) {
+          p.h.cancel();
+          p.h = null;
+        }
+      }
+    }
+  }
+
+  /** 큐가 사라질 때 (연습 반복 취소) */
+  protected dropHit(id: number) {
+    const parts = this.hits.get(id);
+    if (parts) for (const p of parts) p.h?.cancel();
+    this.hits.delete(id);
+  }
+
   frame(f: Omit<Frame, 't' | 'beat'>, perf: number): Frame {
     const t = this.songTime(perf);
     return { ...f, t, beat: t / this.spb };
@@ -148,6 +271,7 @@ abstract class BaseSession {
     if (this.state !== 'playing') return;
     const kind = kindOfRaw(raw);
     if (!kind) return;
+    this.idleMisses = 0;
     const time = this.songTime(raw.perf);
     const ev: GameInput = { kind, time, jt: time - this.calib, x: raw.x, y: raw.y, dx: raw.dx, dy: raw.dy, id: raw.id };
     this.process(ev, raw.kind === 'down' ? 'down' : raw.kind === 'flick' ? 'flick' : 'up');
@@ -202,6 +326,18 @@ abstract class BaseSession {
       g.linearRampToValueAtTime(0, ctx.currentTime + 0.03);
     }
     this.stopSources((ctx?.currentTime ?? 0) + 0.04);
+    // 예약해 둔 성공음도 멈추고, 아직 판정 전인 큐는 재개 후 다시 예약
+    const now = ctx?.currentTime ?? 0;
+    for (const parts of this.hits.values()) {
+      if (!parts) continue;
+      for (const p of parts) {
+        if (!p.h) continue;
+        if (p.at > now + 0.003) p.h.cancel();
+        else p.h.stop(0.03);
+        p.h = null;
+      }
+    }
+    for (const c of this.judge.cues) if (!c.grade) this.hits.delete(c.id);
   }
 
   resume() {
@@ -213,6 +349,17 @@ abstract class BaseSession {
     this.songGain.connect(audio.musicBus);
     this.state = 'playing';
     this.restartSources(T0);
+    // 이미 Just로 판정됐지만 아직 울릴 차례가 오지 않은 소리(예: 불꽃이 터지는 소리)를 새 시각으로 다시 예약
+    for (const c of this.judge.cues) {
+      if (c.grade !== 'just') continue;
+      const parts = this.hits.get(c.id);
+      if (!parts) continue;
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        if (p.h || p.songT < this.pausedSong) continue;
+        parts[i] = this.playPart(p.spec, p.songT, this.ctxAt(p.songT));
+      }
+    }
   }
 
   protected abstract stopSources(when: number): void;
@@ -236,6 +383,7 @@ export class PlaySession extends BaseSession {
     super(def, opts.holding);
     this.chart = buildChart(def);
     this.judge = new Judge(this.chart.cues);
+    this.judge.onJudge = (c) => this.hitJudged(c);
     this.kinds = usedKinds(this.chart.cues);
     this.perfectMode = !!opts.perfect;
     this.autoplay = !!opts.autoplay;
@@ -289,6 +437,7 @@ export class PlaySession extends BaseSession {
   update(perf: number) {
     if (this.state !== 'playing') return;
     const now = this.songTime(perf);
+    this.scheduleHits(this.judge.cues);
     this.runAuto(now, this.judge.cues);
     const missed = this.judge.expire(now - this.calib);
     for (const c of missed) {
@@ -305,6 +454,7 @@ export class PlaySession extends BaseSession {
       this.perfectFailed = true;
       this.pausedSong = this.songTime();
       this.state = 'ended';
+      this.cancelHits();
       this.fadeOut(0.25);
       this.src?.stop((audio.ctx?.currentTime ?? 0) + 0.3);
       this.onPerfectFail?.();
@@ -323,6 +473,7 @@ export class PlaySession extends BaseSession {
   stop() {
     if (this.state === 'playing' || this.state === 'paused') this.pausedSong = this.songTime();
     this.state = 'ended';
+    this.cancelHits();
     try {
       this.fadeOut(0.15);
       this.src?.stop((audio.ctx?.currentTime ?? 0) + 0.2);
@@ -377,7 +528,10 @@ export class PracticeSession extends BaseSession {
       this.loops.push({ chart, buffer: null, len: def.practice[i].beats * this.spb });
     }
     this.makeScene(this.cues, this.markers, [], 'practice');
-    this.judge.onJudge = (c) => this.countJudge(c);
+    this.judge.onJudge = (c) => {
+      this.hitJudged(c);
+      this.countJudge(c);
+    };
   }
 
   async load(): Promise<void> {
@@ -508,6 +662,7 @@ export class PracticeSession extends BaseSession {
       const lastK = this.iters.length ? this.iters[this.iters.length - 1].k : -1;
       if (!this.stepComplete && k > lastK) this.schedule(lastK + 1);
     }
+    this.scheduleHits(this.cues);
     this.runAuto(now, this.cues);
     const missed = this.judge.expire(now - this.calib);
     for (const c of missed) this.scene.onMiss?.(c);
@@ -527,6 +682,7 @@ export class PracticeSession extends BaseSession {
             /* ignore */
           }
           const ids = new Set(it.cues.map((c) => c.id));
+          for (const id of ids) this.dropHit(id);
           if (ids.size) this.judge.remove((c) => ids.has(c.id));
           if (it.markers.length) {
             const ms = new Set(it.markers);
@@ -563,6 +719,7 @@ export class PracticeSession extends BaseSession {
   stop() {
     if (this.state === 'playing' || this.state === 'paused') this.pausedSong = this.songTime();
     this.state = 'ended';
+    this.cancelHits();
     for (const it of this.iters) {
       try {
         it.src?.stop();

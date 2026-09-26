@@ -223,6 +223,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: () => ({ name: 'croak', midi: MY_M, vel: 1, pan: 0.3 }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       myCroak = ev.time;
@@ -233,8 +234,8 @@ function createScene(sc: SceneCtx): Scene {
       }
       if (cue.grade === 'just') {
         myGrade = 'just';
+        // 성공음(개굴)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
-        sc.sfx('croak', MY_M, 1, 0.3);
       } else {
         myGrade = 'barely';
         sc.sfx('croak', MY_M, 0.6, 0.3);

@@ -554,6 +554,19 @@ export class AudioEngine {
     node.connect(this.sfxBus);
     s.start(Math.max(when, ctx.currentTime));
     return {
+      cancel() {
+        // 아직 시작 전이면 아예 울리지 않음
+        try {
+          s.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          g.disconnect();
+        } catch {
+          /* ignore */
+        }
+      },
       stop(fade = 0.03) {
         try {
           const now = ctx.currentTime;
@@ -570,7 +583,10 @@ export class AudioEngine {
 }
 
 export interface SfxHandle {
+  /** 짧게 줄이며 멈춤 */
   stop(fade?: number): void;
+  /** 즉시 취소 (예약만 된 소리는 울리지 않음) */
+  cancel(): void;
 }
 
 export const audio = new AudioEngine();

@@ -219,6 +219,10 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: () => [
+      { name: 'chop', vel: 0.5 },
+      { name: 'plop', vel: 0.8 },
+    ],
     judge(ev: GameInput, j: Judge) {
       if (ev.kind !== 'tap') return undefined;
       const side = sideOf(ev);
@@ -235,9 +239,8 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
+        // 성공음(냠)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
-        sc.sfx('chop', 0, 0.5);
-        sc.sfx('plop', 0, 0.8);
         const L = lay();
         fx.burst(L.mx + chompSide * 20, L.my, 6, { kind: 'dot', r: 4, speed: 180, colors: cue.data.side === 'L' ? ['#ff8ab8', '#ffe14d'] : ['#fff', '#ff4d5e'], max: 0.4, g: 500 });
       } else {

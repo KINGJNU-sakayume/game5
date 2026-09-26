@@ -224,6 +224,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => ({ name: cue.input === 'flick' ? 'pluckL' : 'pluckS' }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap' && ev.kind !== 'flick') return;
       if (!cue) {
@@ -234,8 +235,8 @@ function createScene(sc: SceneCtx): Scene {
       }
       lastAct = ev.time;
       if (cue.grade === 'just') {
+        // 성공음(쏙)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
-        sc.sfx(cue.input === 'flick' ? 'pluckL' : 'pluckS', 0, 1);
       } else {
         sc.sfx(cue.input === 'flick' ? 'pluckL' : 'pluckS', 0, 0.5);
         sc.sfx('boing', 0, 0.4);

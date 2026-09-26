@@ -247,6 +247,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: () => ({ name: 'chirp', midi: PITCH[2], vel: 1, pan: 0.5 }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       lastTap = ev.time;
@@ -256,9 +257,8 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       lastGrade = cue.grade === 'just' ? 'just' : 'barely';
-      if (cue.grade === 'just') {
-        sc.sfx('chirp', PITCH[2], 1, 0.5);
-      } else sc.sfx('chirpBad', 0, 0.8);
+      // 성공음(짹)은 hitSfx로 박자에 맞춰 예약됨
+      if (cue.grade !== 'just') sc.sfx('chirpBad', 0, 0.8);
     },
     onMiss(c: Cue) {
       lastMiss = c.t + 0.1;

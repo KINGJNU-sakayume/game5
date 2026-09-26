@@ -223,6 +223,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: () => ({ name: 'step', vel: 0.9 }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       myStep = ev.time;
@@ -232,7 +233,7 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
-        sc.sfx('step', 0, 0.9);
+        // 성공음(발소리)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
         missStreak = 0;
       } else {

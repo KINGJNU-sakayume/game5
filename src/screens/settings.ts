@@ -41,15 +41,30 @@ export class SettingsScreen implements Screen {
       save();
       if (key === 'sfx') audio.sfx('chop');
     };
+    const beat = s.hitTiming !== 'tap';
     this.buttons = [
       button({ x: bx, y: y0 + 14, w: 120, h: 46, label: '조정하기', color: '#ffb84d', size: 17, onTap: () => this.app.go(new CalibrationScreen(this.app)) }),
-      small(bx, y0 + rowH + 14, '−', step('music', -0.1)),
-      small(bx + 68, y0 + rowH + 14, '+', step('music', 0.1)),
-      small(bx, y0 + rowH * 2 + 14, '−', step('sfx', -0.1)),
-      small(bx + 68, y0 + rowH * 2 + 14, '+', step('sfx', 0.1)),
       button({
         x: bx,
-        y: y0 + rowH * 3 + 14,
+        y: y0 + rowH + 14,
+        w: 120,
+        h: 46,
+        label: beat ? '박자 맞춤' : '누른 순간',
+        color: beat ? '#6be3a0' : '#ffb84d',
+        size: 17,
+        onTap: () => {
+          s.hitTiming = beat ? 'tap' : 'beat';
+          save();
+          this.layoutFor = '';
+        },
+      }),
+      small(bx, y0 + rowH * 2 + 14, '−', step('music', -0.1)),
+      small(bx + 68, y0 + rowH * 2 + 14, '+', step('music', 0.1)),
+      small(bx, y0 + rowH * 3 + 14, '−', step('sfx', -0.1)),
+      small(bx + 68, y0 + rowH * 3 + 14, '+', step('sfx', 0.1)),
+      button({
+        x: bx,
+        y: y0 + rowH * 4 + 14,
         w: 120,
         h: 46,
         label: s.showTiming ? '켜짐' : '꺼짐',
@@ -63,7 +78,7 @@ export class SettingsScreen implements Screen {
       }),
       button({
         x: bx,
-        y: y0 + rowH * 4 + 14,
+        y: y0 + rowH * 5 + 14,
         w: 120,
         h: 46,
         label: s.unlockAll ? '켜짐' : '꺼짐',
@@ -77,7 +92,7 @@ export class SettingsScreen implements Screen {
       }),
       button({
         x: bx,
-        y: y0 + rowH * 5 + 14,
+        y: y0 + rowH * 6 + 14,
         w: 120,
         h: 46,
         label: this.t - this.confirmReset < 3 ? '정말요?' : '초기화',
@@ -115,6 +130,7 @@ export class SettingsScreen implements Screen {
     const rowH = 76;
     const rows: [string, string][] = [
       ['타이밍 보정', `${calibNow >= 0 ? '+' : ''}${Math.round(calibNow * 1000)}ms${s.calibUser ? '' : ' (기기 기본값)'}`],
+      ['성공음 타이밍', s.hitTiming !== 'tap' ? '박자에 맞춰 미리 재생 (권장)' : '누른 순간 재생 (늦을 수 있음)'],
       ['음악 볼륨', `${Math.round(s.music * 100)}%`],
       ['효과음 볼륨', `${Math.round(s.sfx * 100)}%`],
       ['빠름/늦음 표시', '본 게임 중 표시'],
@@ -132,7 +148,7 @@ export class SettingsScreen implements Screen {
     if (iy < H - safe.b - 60) {
       wrapText(
         g,
-        '아이폰에서는 Safari 공유 버튼 → "홈 화면에 추가"로 설치하면 화면 전체를 채워서 플레이할 수 있어요.\n소리가 박자보다 늦게 들리면(블루투스 이어폰 등) 타이밍 보정을 해 주세요.',
+        '아이폰에서는 Safari 공유 버튼 → "홈 화면에 추가"로 설치하면 화면 전체를 채워서 플레이할 수 있어요.\n박자에 맞게 눌렀는데 판정이 자꾸 늦거나 빠르면(블루투스 이어폰 등) 타이밍 보정을 해 주세요.',
         W / 2,
         iy,
         W - 50,
@@ -299,7 +315,7 @@ export class CalibrationScreen implements Screen {
       const dev = (ph - Math.round(ph)) * this.spb;
       this.devs.push(dev);
       this.lastTap = this.t;
-      audio.sfx('block', 0, 0.6);
+      // 탭 소리는 내지 않음: 누른 순간의 소리는 출력 지연만큼 늦게 들려서 측정을 흐리게 함 (화면의 링으로만 표시)
       if (this.devs.length >= CAL_TAPS) this.finish();
     }
   }

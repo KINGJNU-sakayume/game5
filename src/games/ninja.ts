@@ -346,6 +346,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => ({ name: cue.kind === 'bell' ? 'bellHit' : 'slash' }),
     onInput(ev, cue) {
       if (ev.kind !== 'flick') return;
       lastSlash = ev.time;
@@ -356,7 +357,7 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
-        sc.sfx(cue.kind === 'bell' ? 'bellHit' : 'slash');
+        // 성공음(베기)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
         const [x, y] = path(cue, Math.min(ev.time, cue.t));
         fx.burst(x, y, cue.kind === 'bell' ? 14 : 8, { kind: 'spark', r: 7, speed: 280, colors: ['#ffffff', '#fff3c4', '#ffc2dc'], max: 0.45 });

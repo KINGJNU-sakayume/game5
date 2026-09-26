@@ -166,7 +166,6 @@ function createScene(sc: SceneCtx): Scene {
   let lastPress = -99;
   let lastGood = -99;
   let lastBad = -99;
-  const boomed = new Set<number>();
 
   const lay = () => ({ lx: W * 0.64, ly: H * 0.78, skyY: H * 0.25, k: 1.45 });
 
@@ -179,6 +178,10 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => [
+      { name: 'launch' },
+      { name: 'boom', vel: cue.data.big ? 1.2 : 0.9, delay: spb },
+    ],
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       lastPress = ev.time;
@@ -187,12 +190,14 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
+        // 발사음과 한 박 뒤 터지는 소리는 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
-        sc.sfx('launch', 0, 1);
       } else {
         lastBad = ev.time;
         sc.sfx('launch', 0, 0.4);
         sc.sfx('fizzle', 0, 0.6);
+        // 약하게 터지는 소리: 누른 뒤 한 박 (불꽃이 터지는 그림과 같은 순간)
+        sc.sfxAt(ev.time + spb, 'boom', 0, 0.4);
       }
     },
     onMiss(c: Cue) {
@@ -235,7 +240,8 @@ function createScene(sc: SceneCtx): Scene {
       for (const c of sc.cues) {
         if (c.grade !== 'just' && c.grade !== 'barely') continue;
         const at = c.at ?? c.t;
-        const rise = spb * 1;
+        // 터지는 순간: Just는 큐 + 1박(예약된 소리와 같은 순간), 아슬아슬은 누른 뒤 1박
+        const rise = (c.grade === 'just' ? c.t : at) + spb - at;
         const [bx, by] = burstPos(c);
         const dt = t - at;
         if (dt < 0 || dt > rise + 1.9) continue;
@@ -246,10 +252,6 @@ function createScene(sc: SceneCtx): Scene {
           const y = lerp(L.ly - 70 * L.k, by, 1 - (1 - u) * (1 - u));
           for (let k = 0; k < 6; k++) circle(g, x - (bx - L.lx) * 0.02 * k, y + k * 8, 3 - k * 0.4, `rgba(255,220,150,${1 - k / 6})`);
         } else {
-          if (!boomed.has(c.id) && sc.mode !== 'preview') {
-            boomed.add(c.id);
-            sc.sfx('boom', 0, c.grade === 'just' ? (c.data.big ? 1.2 : 0.9) : 0.4);
-          }
           drawBurst(g, bx, by, dt - rise, c.id, !!c.data.big, c.grade === 'barely');
           // 호수에 비친 빛
           const ref = clamp01(1 - (dt - rise) / 1.2);

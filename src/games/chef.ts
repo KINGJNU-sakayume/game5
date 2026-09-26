@@ -609,6 +609,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => ({ name: cue.kind === 'melon' ? 'chopBig' : 'chop' }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       lastChop = ev.time;
@@ -618,7 +619,7 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
-        sc.sfx(cue.kind === 'melon' ? 'chopBig' : 'chop');
+        // 성공음(chop)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
         const [qx, qy] = flightPos(cue, Math.min(ev.time, cue.t));
         fx.burst(qx, qy, cue.kind === 'melon' ? 14 : 8, {

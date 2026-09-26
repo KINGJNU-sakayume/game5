@@ -250,6 +250,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => (cue.input === 'release' ? { name: 'tie' } : null),
     judge(ev: GameInput, j: Judge) {
       if (ev.kind === 'tap') return null;
       if (ev.kind !== 'release') return undefined;
@@ -291,7 +292,7 @@ function createScene(sc: SceneCtx): Scene {
       const inf = info.get(cue.id) ?? { start: arriveT(cue) };
       info.set(cue.id, inf);
       if (cue.grade === 'just') {
-        sc.sfx('tie', 0, 1);
+        // 성공음(묶기)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
         inf.endR = 1;
         fx.burst(L.nx, L.ny - RADIUS[cue.kind as Size] * 1.6, 8, { kind: 'star', r: 7, speed: 220, colors: ['#fff27a', '#ffffff'], max: 0.5 });

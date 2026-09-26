@@ -276,6 +276,7 @@ function createScene(sc: SceneCtx): Scene {
   }
 
   return {
+    hitSfx: (cue) => ({ name: cue.kind === 'smash' ? 'smash' : 'racket' }),
     onInput(ev, cue) {
       if (ev.kind !== 'tap') return;
       mySwing = ev.time;
@@ -284,7 +285,7 @@ function createScene(sc: SceneCtx): Scene {
         return;
       }
       if (cue.grade === 'just') {
-        sc.sfx(cue.kind === 'smash' ? 'smash' : 'racket');
+        // 성공음(라켓)은 hitSfx로 박자에 맞춰 예약됨
         lastGood = ev.time;
         const [x, y] = incoming(cue, Math.min(ev.time, cue.t));
         fx.burst(x, y, 7, { kind: 'star', r: 6, speed: 220, colors: ['#fff27a', '#ffffff', '#9fe3ff'], max: 0.45 });
