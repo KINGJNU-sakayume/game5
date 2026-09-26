@@ -9,7 +9,11 @@ import { penguin } from './penguin';
 import { badminton } from './badminton';
 import { frogs } from './frogs';
 import { waltzGame } from './waltz';
-import { remix1, remix2 } from './remixes';
+import { remix1, remix2, remix3 } from './remixes';
+import { cheer } from './cheer';
+import { whisker } from './whisker';
+import { munch } from './munch';
+import { fireworks } from './fireworks';
 
 export interface GameSet {
   title: string;
@@ -17,11 +21,12 @@ export interface GameSet {
   games: string[];
 }
 
-export const GAMES: GameDef[] = [chef, trio, balloon, ninja, penguin, badminton, frogs, waltzGame, remix1, remix2];
+export const GAMES: GameDef[] = [chef, trio, balloon, ninja, penguin, badminton, frogs, waltzGame, remix1, remix2, cheer, whisker, munch, fireworks, remix3];
 
 export const SETS: GameSet[] = [
   { title: 'SET 1', sub: '첫걸음', games: ['chef', 'trio', 'balloon', 'ninja', 'remix1'] },
   { title: 'SET 2', sub: '두근두근', games: ['penguin', 'badminton', 'frogs', 'waltz', 'remix2'] },
+  { title: 'SET 3', sub: '반짝반짝', games: ['cheer', 'whisker', 'munch', 'fireworks', 'remix3'] },
 ];
 
 export const ORDER: string[] = SETS.flatMap((s) => s.games);

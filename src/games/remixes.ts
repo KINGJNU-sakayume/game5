@@ -9,6 +9,10 @@ import { penguin } from './penguin';
 import { makeRemix, type RemixPlanItem } from './remix';
 import { trio } from './trio';
 import { waltzGame } from './waltz';
+import { cheer } from './cheer';
+import { whisker } from './whisker';
+import { munch } from './munch';
+import { fireworks } from './fireworks';
 
 function plan(order: string[], barsList: number[][]): RemixPlanItem[] {
   const out: RemixPlanItem[] = [];
@@ -128,5 +132,48 @@ export const remix2 = makeRemix({
     hi: '남극부터 달나라까지, 모두가 함께 춤췄어요!',
     ok: '신나는 무대였어요. 다음엔 더 완벽하게!',
     try: '무대 위가 대혼란... 다들 어리둥절해요.',
+  },
+});
+
+export const remix3 = makeRemix({
+  id: 'remix3',
+  title: '리믹스 3',
+  sub: 'Grand Finale',
+  desc: '마지막 무대! 세트 3과 반가운 얼굴들이 총출동!',
+  howto: '응원단, 수염 뽑기, 곰돌이, 불꽃놀이에 셰프와 닌자까지!\n지금까지 익힌 리듬을 모두 보여 주세요.',
+  color: '#ffd23e',
+  accent: '#fff8d8',
+  bpm: 128,
+  games: [cheer, whisker, munch, fireworks, chef, ninja],
+  plan: [
+    { game: 'cheer', bars: 4, variant: 0 },
+    { game: 'whisker', bars: 4, variant: 0 },
+    { game: 'munch', bars: 4, variant: 0 },
+    { game: 'fireworks', bars: 4, variant: 0 },
+    { game: 'chef', bars: 4, variant: 0 },
+    { game: 'ninja', bars: 4, variant: 0 },
+    { game: 'whisker', bars: 4, variant: 1 },
+    { game: 'munch', bars: 4, variant: 1 },
+    { game: 'fireworks', bars: 4, variant: 1 },
+    { game: 'cheer', bars: 4, variant: 1 },
+  ],
+  music(b, intro, body) {
+    const progs = ['A E F#m D A E D E', 'D E C#m F#m D E A A'];
+    const mels = [
+      [
+        'C#5 . E5 . A5 . E5 .', 'B4 . E5 . G#5 . E5 .', 'A4 . C#5 . F#5 . C#5 .', 'D5 . F#5 . A5 - . .',
+        'C#6 . B5 . A5 . E5 .', 'B5 - G#5 . E5 . B4 .', 'D5 . F#5 . A5 . D6 .', 'E6 - - - . . . .',
+      ].join(' '),
+      [
+        'F#5 . A5 . D6 . A5 .', 'G#5 . B5 . E6 . B5 .', 'E5 . G#5 . C#6 . G#5 .', 'F#5 - - . C#5 . F#5 .',
+        'A5 . F#5 . D5 . F#5 .', 'B5 . G#5 . E5 . G#5 .', 'A5 . C#6 . E6 . C#6 .', 'A5 - - - . . . .',
+      ].join(' '),
+    ];
+    popBody(b, intro, body, progs, mels, { kickPat: 'x...x.x.', bassPat: 'R.R8R.58', stab: 'brass', lead: 'lead' });
+  },
+  epilogue: {
+    hi: '별나라 모두가 당신에게 박수를 보냈어요. 리듬 마스터!',
+    ok: '대단원의 막이 내렸어요. 멋진 무대였어요!',
+    try: '앗, 피날레가 조금 삐걱거렸어요. 한 번 더!',
   },
 });

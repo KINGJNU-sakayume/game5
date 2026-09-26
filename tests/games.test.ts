@@ -41,11 +41,13 @@ describe.each(GAMES.map((g) => [g.id, g] as const))('%s', (_id, def) => {
   });
 
   it('같은 입력 종류의 큐가 너무 붙어 있지 않음', () => {
+    // 같은 입력 + 같은 위치(좌/우)끼리만 비교 (양쪽 동시 탭은 허용)
     const byKind = new Map<string, number>();
     for (const c of chart.cues) {
-      const prev = byKind.get(c.input);
+      const key = c.input + ':' + (c.data.side ?? '');
+      const prev = byKind.get(key);
       if (prev != null) expect(c.t - prev, `${c.kind} @ beat ${c.beat}`).toBeGreaterThanOrEqual(WIN_BARELY * 1.6);
-      byKind.set(c.input, c.t);
+      byKind.set(key, c.t);
     }
   });
 

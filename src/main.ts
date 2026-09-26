@@ -9,6 +9,7 @@ import { MenuScreen } from './screens/menu';
 import { PreviewScreen, type PreviewGrade } from './screens/preview';
 import { ResultScreen } from './screens/results';
 import { simulate } from './core/simulate';
+import { EndingScreen } from './screens/ending';
 import { bgm, COMMON_SFX } from './bgm';
 
 loadSave();
@@ -41,6 +42,9 @@ w.__rs = {
   },
   menu() {
     app.go(new MenuScreen(app), '#000', 0.05);
+  },
+  ending() {
+    app.go(new EndingScreen(app), '#fff', 0.1);
   },
   /** 결과 화면 미리보기: grade = just | barely | miss | mixed */
   result(id: string, grade: PreviewGrade = 'mixed') {

@@ -7,11 +7,12 @@ import type { RawInput } from '../core/input';
 import { RANK_LABEL, type Rank, type ScoreResult } from '../core/judge';
 import { record, save } from '../core/save';
 import { clamp01, easeOutBack, easeOutCubic } from '../core/util';
-import { nextGame, isUnlocked } from '../games';
+import { ORDER, nextGame, isUnlocked } from '../games';
 import { button, drawButton, handleButtons, type Button } from '../ui';
 import { medal, perfectBadge } from './badges';
 import { PlayScreen } from './play';
 import { MenuScreen } from './menu';
+import { EndingScreen } from './ending';
 
 export function makeComments(def: GameDef, res: ScoreResult): string[] {
   const cats = Object.entries(res.cats)
@@ -51,12 +52,14 @@ export class ResultScreen implements Screen {
   private played = new Set<string>();
   private ticked = 0;
   private laidOut = false;
+  private ending = false;
 
   constructor(private app: App, private def: GameDef, private res: ScoreResult, private opts: { perfect: boolean }) {
     this.rank = res.rank;
     this.lines = makeComments(def, res);
     const rec = record(def.id);
     const prevRank = rec.rank;
+    this.ending = ORDER[ORDER.length - 1] === def.id && !rec.cleared && res.rank !== 'try';
     rec.plays++;
     rec.practiced = true;
     if (res.score > rec.best) rec.best = res.score;
@@ -86,7 +89,9 @@ export class ResultScreen implements Screen {
     const retry = () => this.app.go(new PlayScreen(this.app, this.def, { practice: false, perfect: this.opts.perfect && !this.res.perfect }));
     this.buttons = [
       button({ x: 24, y: by, w: bw, h: 58, label: '다시 하기', color: '#6bc6ff', onTap: retry }),
-      button({
+      this.ending
+        ? button({ x: 24 + bw + 12, y: by, w: bw, h: 58, label: '엔딩 보기 ▶', color: '#ffb84d', onTap: () => this.app.go(new EndingScreen(this.app), '#fff', 0.6) })
+        : button({
         x: 24 + bw + 12,
         y: by,
         w: bw,

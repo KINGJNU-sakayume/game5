@@ -91,7 +91,7 @@ test('모든 게임 장면이 오류 없이 그려짐', async ({ page }, info) =
   const errors = watchErrors(page);
   await page.goto('/');
   const games = await page.evaluate(() => window.__rs.games);
-  expect(games.length).toBe(10);
+  expect(games.length).toBe(15);
   for (const id of games) {
     for (const t of [3, 12, 30]) {
       await page.evaluate(([g, tt]) => window.__rs.preview(g as string, tt as number), [id, t]);

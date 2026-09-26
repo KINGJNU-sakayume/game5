@@ -136,6 +136,8 @@ export class InputManager {
 
   private onKey(e: KeyboardEvent, down: boolean) {
     const tapKeys = ['Space', 'Enter', 'KeyJ', 'KeyF', 'KeyZ'];
+    // 좌/우 구분 게임용: F = 왼쪽, J = 오른쪽 (디자인 좌표)
+    const keyX = e.code === 'KeyF' ? 60 : e.code === 'KeyJ' ? 333 : -1;
     const flickKeys = ['KeyK', 'KeyD', 'KeyX', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'ArrowDown'];
     const t = this.stamp(e);
     if (tapKeys.includes(e.code)) {
@@ -143,11 +145,11 @@ export class InputManager {
       if (down) {
         if (e.repeat || this.keysDown.has('tap')) return;
         this.keysDown.add('tap');
-        this.handler({ kind: 'down', id: -1, x: -1, y: -1, perf: t, dx: 0, dy: 0, key: true });
+        this.handler({ kind: 'down', id: -1, x: keyX, y: -1, perf: t, dx: 0, dy: 0, key: true });
       } else {
         if (!this.keysDown.has('tap')) return;
         this.keysDown.delete('tap');
-        this.handler({ kind: 'up', id: -1, x: -1, y: -1, perf: t, dx: 0, dy: 0, key: true });
+        this.handler({ kind: 'up', id: -1, x: keyX, y: -1, perf: t, dx: 0, dy: 0, key: true });
       }
     } else if (flickKeys.includes(e.code)) {
       e.preventDefault();

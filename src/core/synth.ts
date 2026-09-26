@@ -1324,6 +1324,95 @@ const SFX: Record<string, InstDef> = {
     },
   },
 
+  // ---- 쏙쏙 수염 뽑기
+  sprout: {
+    gain: 0.4,
+    oneShot: 0.2,
+    rev: 0.12,
+    build(ac, o, t) {
+      sweep(ac, o, 'sine', t, 900, 1700, 0.05, 1, 'lin');
+      sweep(ac, o, 'triangle', t + 0.04, 1700, 1400, 0.05, 0.4);
+    },
+  },
+  sproutLong: {
+    gain: 0.4,
+    oneShot: 0.45,
+    rev: 0.15,
+    build(ac, out, t) {
+      const o = osc(ac, 'sine', 500, t, t + 0.45);
+      o.frequency.linearRampToValueAtTime(1300, t + 0.3);
+      const lfo = osc(ac, 'sine', 18, t, t + 0.45);
+      const lg = gain(ac, 60);
+      chain(lfo, lg);
+      lg.connect(o.frequency);
+      const a = gain(ac, 0);
+      adsr(a.gain, t, 0.3, 0.02, 0.1, 0.8, 0.08, 1);
+      chain(o, a, out);
+    },
+  },
+  pluckS: {
+    gain: 0.55,
+    oneShot: 0.2,
+    rev: 0.1,
+    build(ac, o, t, _m, _d, nz) {
+      noiseHit(ac, o, nz, t, 'bandpass', 4000, 2, 0.02, 0.8, 0.3);
+      sweep(ac, o, 'sine', t, 1200, 2600, 0.06, 0.8, 'lin');
+    },
+  },
+  pluckL: {
+    gain: 0.5,
+    oneShot: 0.45,
+    rev: 0.15,
+    build(ac, o, t, _m, _d, nz) {
+      const b = noiseHit(ac, o, nz, t, 'bandpass', 900, 2, 0.25, 0.8, 0.6);
+      b.frequency.exponentialRampToValueAtTime(4000, t + 0.25);
+      sweep(ac, o, 'sine', t, 500, 2000, 0.28, 0.7, 'lin');
+    },
+  },
+  boing: {
+    gain: 0.4,
+    oneShot: 0.5,
+    rev: 0.1,
+    build(ac, out, t) {
+      const o = osc(ac, 'triangle', 300, t, t + 0.5);
+      o.frequency.exponentialRampToValueAtTime(700, t + 0.08);
+      o.frequency.exponentialRampToValueAtTime(220, t + 0.4);
+      const lfo = osc(ac, 'sine', 25, t, t + 0.5);
+      const lg = gain(ac, 40);
+      chain(lfo, lg);
+      lg.connect(o.frequency);
+      const a = gain(ac, 0);
+      perc(a.gain, t, 0.9, 0.4);
+      chain(o, a, out);
+    },
+  },
+
+  // ---- 불꽃놀이
+  launch: {
+    gain: 0.45,
+    oneShot: 1.4,
+    rev: 0.3,
+    build(ac, out, t, _m, _d, nz) {
+      const b = noiseHit(ac, out, nz, t, 'bandpass', 500, 2.5, 0.35, 0.9, 0.2);
+      b.frequency.exponentialRampToValueAtTime(3500, t + 0.35);
+      sweep(ac, out, 'sine', t, 400, 1600, 0.3, 0.35, 'lin');
+      TONAL.bell.build(ac, out, t, 84, 0.3, nz);
+    },
+  },
+  boom: {
+    gain: 0.6,
+    oneShot: 1.6,
+    rev: 0.4,
+    build(ac, out, t, _m, _d, nz) {
+      sweep(ac, out, 'sine', t, 120, 40, 0.5, 1);
+      noiseHit(ac, out, nz, t, 'lowpass', 1800, 0.7, 0.3, 0.9, 0.7);
+      for (let i = 0; i < 10; i++) {
+        const tt = t + 0.25 + i * 0.07 + (i % 3) * 0.013;
+        noiseHit(ac, out, nz, tt, 'highpass', 5000, 0.7, 0.012, 0.35, i * 0.1);
+      }
+    },
+  },
+
   // ---- 요정 왈츠
   twinkle: {
     gain: 0.3,
