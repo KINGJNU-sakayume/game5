@@ -177,15 +177,15 @@ function voxNoise(ac: Ctx, out: AudioNode, nz: AudioBuffer, t: number, f: number
 const TONAL: Record<string, InstDef> = {
   // 통통 튀는 플럭 베이스
   bass: {
-    gain: 0.55,
+    gain: 0.46,
     release: 0.08,
     rev: 0.02,
     build(ac, out, t, m, dur) {
       const f = mtof(m);
       const end = t + dur + 0.12;
       const o1 = osc(ac, 'sawtooth', f, t, end);
-      const o2 = osc(ac, 'square', f / 2, t, end);
-      const g2 = gain(ac, 0.35);
+      const o2 = osc(ac, 'square', f, t, end, 7);
+      const g2 = gain(ac, 0.3);
       o2.connect(g2);
       const lp = filt(ac, 'lowpass', 1800, 3.5);
       lp.frequency.setValueAtTime(2400, t);
@@ -199,7 +199,7 @@ const TONAL: Record<string, InstDef> = {
   },
   // 둥근 베이스 (부드러운 곡)
   bassSoft: {
-    gain: 0.7,
+    gain: 0.55,
     release: 0.1,
     build(ac, out, t, m, dur) {
       const f = mtof(m);
@@ -507,7 +507,7 @@ const TONAL: Record<string, InstDef> = {
 
 const DRUMS: Record<string, InstDef> = {
   kick: {
-    gain: 0.95,
+    gain: 0.8,
     oneShot: 0.45,
     build(ac, out, t, _m, _d, nz) {
       const o = osc(ac, 'sine', 150, t, t + 0.45);

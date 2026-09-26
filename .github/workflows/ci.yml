@@ -65,6 +65,38 @@ jobs:
             playwright-report
           retention-days: 14
 
+  e2e-webkit:
+    name: E2E 테스트 (WebKit = Safari 엔진)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Safari 엔진 호환성 확인용 (배포를 막지는 않음)
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Playwright WebKit 설치
+        run: npx playwright install --with-deps webkit
+      - name: 빌드
+        run: npm run build
+      - name: E2E 실행 (WebKit, 393x852 @3x)
+        run: npx playwright test
+        env:
+          PW_WEBKIT: '1'
+      - name: 스크린샷/리포트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-webkit-screenshots
+          path: |
+            test-results
+            playwright-report
+          retention-days: 14
+
   deploy:
     name: GitHub Pages 배포
     needs: [test, e2e]

@@ -53,7 +53,7 @@ function waltz(b: ChartBuilder, bar: number, prog: string, soft = false) {
   const chords = prog.split(' ');
   chords.forEach((ch, i) => {
     const s = b.bar(bar + i);
-    b.bassline(s, 3, ch, 'R-----', 'bassSoft', { vel: soft ? 0.6 : 0.75 });
+    b.bassline(s, 3, ch, 'R-----', 'bassSoft', { vel: soft ? 0.45 : 0.55, low: 40 });
     b.chords(s, 3, ch, 'strings', { rhythm: '..x.x.', center: 64, vel: soft ? 0.45 : 0.6 });
     b.chords(s, 3, ch, 'ep', { rhythm: '..x.x.', center: 70, vel: 0.25 });
     b.drums(s, 0.5, { k: 'x.....', tri: i % 4 === 0 ? 'x.....' : '', sh: '..x.x.' }, { vel: 0.55 });

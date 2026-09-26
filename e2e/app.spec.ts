@@ -103,7 +103,7 @@ test('모든 게임 장면이 오류 없이 그려짐', async ({ page }, info) =
 });
 
 test('자동 플레이로 끝까지 → 결과 하이레벨', async ({ page }, info) => {
-  test.skip(info.project.name !== 'iphone15pro-fullscreen', '한 번만 실행');
+  test.skip(info.project.name === 'iphone15pro-safari', '전체 화면 프로젝트에서만 실행');
   const errors = watchErrors(page);
   await page.goto('/');
   await page.waitForTimeout(300);

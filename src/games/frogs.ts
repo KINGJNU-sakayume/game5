@@ -51,7 +51,7 @@ const PROG = 'F Dm Bb C';
 
 function band(b: ChartBuilder, bar: number, n: number, soft: boolean) {
   const prog = Array.from({ length: n }, (_, i) => PROG.split(' ')[i % 4]).join(' ');
-  b.bassline(b.bar(bar), 4, prog, 'R.3.5.3.', 'bassSoft', { vel: soft ? 0.55 : 0.7 });
+  b.bassline(b.bar(bar), 4, prog, 'R.3.5.3.', 'bassSoft', { vel: soft ? 0.42 : 0.55, low: 40 });
   b.chords(b.bar(bar), 4, prog, 'organ', { rhythm: '.x.x.x.x', center: 62, vel: soft ? 0.35 : 0.5 });
   for (let i = 0; i < n; i++) {
     const s = b.bar(bar + i);

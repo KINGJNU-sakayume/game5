@@ -237,8 +237,54 @@ export function fdnReverb(send: Float32Array, sr: number, decaySec = 1.5): [Floa
 
 /** 마스터 레벨 (곡과 실시간 효과음 모두 동일하게 적용) */
 export const MASTER = 0.5;
-/** 곡 음량 목표 (RMS) */
-const TARGET_RMS = 0.125;
+/** 곡 음량 목표: 150Hz 이상 대역의 RMS */
+const TARGET_MID_RMS = 0.085;
+/** 전체 대역 RMS 상한 (과한 증폭으로 찌그러지지 않게) */
+const MAX_FULL_RMS = 0.16;
+
+/** 2차 하이패스 (제자리) */
+export function highpass(x: Float32Array, sr: number, f: number) {
+  const w = (2 * Math.PI * f) / sr;
+  const cw = Math.cos(w);
+  const alpha = Math.sin(w) / (2 * Math.SQRT1_2);
+  const a0 = 1 + alpha;
+  const b0 = (1 + cw) / 2 / a0;
+  const b1 = -(1 + cw) / a0;
+  const b2 = b0;
+  const a1 = (-2 * cw) / a0;
+  const a2 = (1 - alpha) / a0;
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  for (let i = 0; i < x.length; i++) {
+    const x0 = x[i];
+    const y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    x2 = x1;
+    x1 = x0;
+    y2 = y1;
+    y1 = y0;
+    x[i] = y0;
+  }
+}
+
+/** 저역을 뺀 체감 음량 (150Hz 1차 하이패스 후 RMS) */
+function weightedRms(L: Float32Array, R: Float32Array, sr: number): number {
+  const a = Math.exp((-2 * Math.PI * 150) / sr);
+  let pl = 0;
+  let ol = 0;
+  let pr = 0;
+  let or = 0;
+  let sum = 0;
+  for (let i = 0; i < L.length; i++) {
+    ol = a * (ol + L[i] - pl);
+    pl = L[i];
+    or = a * (or + R[i] - pr);
+    pr = R[i];
+    sum += ol * ol + or * or;
+  }
+  return Math.sqrt(sum / (2 * L.length));
+}
 
 function softClip(x: number): number {
   const a = x < 0 ? -x : x;
@@ -267,15 +313,21 @@ export async function renderSong(notes: NoteEvent[], bank: SoundBank, lengthSec:
       R[i] += rr[i] * wet;
     }
   }
-  // 곡마다 체감 음량을 비슷하게 (RMS 기준, 과한 증폭/감쇄는 제한)
-  let sum = 0;
+  // 초저역 럼블 제거 (40Hz 하이패스, 2차)
+  highpass(L, bank.sr, 40);
+  highpass(R, bank.sr, 40);
+  // 곡마다 체감 음량을 비슷하게: 휴대폰 스피커처럼 저역을 뺀(150Hz 하이패스) 음량을 기준으로 맞춤
+  const mid = (L.length > 0 ? weightedRms(L, R, bank.sr) : 0) * MASTER;
+  let full = 0;
   let n = 0;
   for (let i = 0; i < mix.length; i += 4) {
-    sum += L[i] * L[i] + R[i] * R[i];
+    full += L[i] * L[i] + R[i] * R[i];
     n += 2;
   }
-  const rms = Math.sqrt(sum / Math.max(1, n)) * MASTER;
-  const norm = rms > 1e-4 ? Math.max(0.6, Math.min(1.6, TARGET_RMS / rms)) : 1;
+  const fullRms = Math.sqrt(full / Math.max(1, n)) * MASTER;
+  let norm = mid > 1e-4 ? TARGET_MID_RMS / mid : 1;
+  norm = Math.max(0.6, Math.min(2.0, norm));
+  if (fullRms * norm > MAX_FULL_RMS) norm = MAX_FULL_RMS / fullRms;
   const k = MASTER * norm;
   for (let i = 0; i < mix.length; i++) {
     L[i] = softClip(L[i] * k);
