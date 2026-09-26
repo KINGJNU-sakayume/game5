@@ -124,23 +124,25 @@ jobs:
       - name: Pages가 꺼져 있으면 안내
         if: steps.pages.outcome == 'failure'
         run: |
-          echo "::error title=GitHub Pages 설정 필요::저장소 Settings → Pages → Build and deployment → Source 를 'GitHub Actions' 로 바꾼 뒤 이 워크플로를 다시 실행하세요."
+          echo "::warning title=GitHub Pages 설정 필요::아직 배포되지 않았어요. 저장소 Settings → Pages → Build and deployment → Source 를 'GitHub Actions' 로 바꾼 뒤 이 워크플로를 다시 실행(Re-run)하면 배포됩니다."
           {
-            echo "### ⚠️ GitHub Pages 설정이 필요해요"
+            echo "### ⚠️ GitHub Pages 설정이 필요해요 (테스트는 모두 통과)"
             echo ""
             echo "1. 저장소 **Settings → Pages** 로 이동"
             echo "2. **Build and deployment → Source** 를 **GitHub Actions** 로 선택"
-            echo "3. Actions 탭에서 이 워크플로를 **Re-run** 하면 배포됩니다."
+            echo "3. Actions 탭에서 이 워크플로를 **Re-run all jobs** 하면 배포됩니다."
           } >> "$GITHUB_STEP_SUMMARY"
-          exit 1
       - name: Pages 아티팩트 업로드
+        if: steps.pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
       - name: 배포
+        if: steps.pages.outcome == 'success'
         id: deployment
         uses: actions/deploy-pages@v4
       - name: 배포 주소 안내
+        if: steps.pages.outcome == 'success'
         run: |
           {
             echo "### 🎮 리듬 별나라 배포 완료!"
