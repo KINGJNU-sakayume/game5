@@ -63,23 +63,30 @@ export class EndingScreen implements Screen {
       const y = ((hash01(i * 3) * H + t * (30 + hash01(i) * 40)) % (H + 40)) - 20;
       star(g, x, y, 5, 2.2, 5, t + i, ['#ffe14d', '#ff9ad5', '#8fd0ff'][i % 3]);
     }
-    // 크레딧 (위로 흐름)
-    const speed = 42;
-    let y = H + 40 - t * speed + safe.t;
+    // 크레딧 (위로 흐름): 아래 퍼레이드와 겹치지 않게 그 위에서만 보이고, 가장자리에서 부드럽게 나타나고 사라짐
+    const py = H - safe.b - 90;
+    const top = safe.t + 10;
+    const bottom = py - 70;
+    const span = LINES.slice(0, -1).reduce((a, [, size]) => a + size * 1.9, 0);
+    // 마지막 줄(THE END)이 화면 40% 높이에 닿으면 멈춤
+    const endY = H * 0.4;
+    let y = bottom + 30 - Math.min(t * 42, bottom + 30 - endY + span);
     const mc = medalCount();
     let lastY = y;
     for (const [line, size] of LINES) {
       const s = line === '__MEDALS__' ? `메달 ${mc.medals} / ${mc.total} · 퍼펙트 ${mc.perfects}` : line;
-      if (s && y > -60 && y < H + 60) {
+      const a = clamp01((bottom - y) / 60) * clamp01((y - top) / 60);
+      if (s && a > 0) {
+        g.globalAlpha = a;
         if (s === '리듬 별나라') logo(g, W / 2, y, 40, t);
         else text(g, s, W / 2, y, size, '#fff', { weight: size >= 20 ? 900 : 700, stroke: size >= 20 ? OUT : undefined, strokeW: 5 });
+        g.globalAlpha = 1;
       }
       lastY = y;
       y += size * 1.9;
     }
-    if (lastY < H * 0.45) this.done = true;
+    if (lastY <= endY + 0.5) this.done = true;
     // 퍼레이드 (아래쪽)
-    const py = H - safe.b - 90;
     rrect(g, -20, py + 40, W + 40, 80, 0, 'rgba(20,10,40,0.6)');
     const n = GAMES.filter((g2) => !g2.remix).length;
     const spacing = 96;
