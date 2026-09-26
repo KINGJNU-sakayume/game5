@@ -21,7 +21,7 @@ function callResponse(b: ChartBuilder, bar: number, pat: string, cat: string) {
     b.sfx(s + i * 0.5, 'croak', 1, LEAD_M, -0.3);
     b.cue(r + i * 0.5, 'tap', cat, { callBeat: s + i * 0.5, slot: i, respBar: r }, { cat });
   }
-  b.marker(s, 'call', { pat: p, resp: r });
+  b.marker(s, 'call', { pat: p, respBeat: r });
 }
 
 const CHART: [string, string][] = [
@@ -258,7 +258,7 @@ function createScene(sc: SceneCtx): Scene {
       for (const m of sc.markers) {
         if (m.type !== 'call') continue;
         const st = m.t;
-        const rt = m.data.resp * spb;
+        const rt = m.data.respBeat * spb;
         const end = rt + 4 * spb;
         if (t >= st - 0.05 && t < end + 0.3) {
           phase = t < rt - 0.05 ? 'call' : 'resp';

@@ -243,19 +243,25 @@ export class MenuScreen implements Screen {
       bgm.stop(0.3);
       this.app.go(new PlayScreen(this.app, def, { practice, perfect }));
     };
-    this.panelButtons = [
-      button({ x: 32, y: by, w: bw, h: 62, label: '연습', sub: '방법 익히기', color: '#6bc6ff', onTap: () => launch(true) }),
-      button({
-        x: 32 + bw + 12,
-        y: by,
-        w: bw,
-        h: 62,
-        label: '시작!',
-        sub: rec.practiced || def.practice.length === 0 ? '바로 플레이' : '연습부터',
-        color: '#ff6b8b',
-        onTap: () => launch(!rec.practiced && def.practice.length > 0),
-      }),
-    ];
+    const hasPractice = def.practice.length > 0;
+    this.panelButtons = hasPractice
+      ? [
+          button({ x: 32, y: by, w: bw, h: 62, label: '연습', sub: '방법 익히기', color: '#6bc6ff', onTap: () => launch(true) }),
+          button({
+            x: 32 + bw + 12,
+            y: by,
+            w: bw,
+            h: 62,
+            label: '시작!',
+            sub: rec.practiced ? '바로 플레이' : '연습부터',
+            color: '#ff6b8b',
+            onTap: () => launch(!rec.practiced),
+          }),
+        ]
+      : [
+          // 리믹스는 원작처럼 연습 없이 바로
+          button({ x: 32, y: by, w: W - 64, h: 62, label: '시작!', sub: '연습 없이 바로 도전', color: '#ff6b8b', onTap: () => launch(false) }),
+        ];
     if (rec.rank === 'hi' && !rec.perfect) {
       this.panelButtons.push(
         button({ x: 32, y: by - 70, w: W - 64, h: 56, label: '퍼펙트 도전', sub: '한 번도 틀리지 않기!', color: '#c77dff', onTap: () => launch(false, true) }),
@@ -325,7 +331,7 @@ export class MenuScreen implements Screen {
         const onClose = Math.hypot(e.x - (W - 44), e.y - (top + 12)) < 28;
         if (onClose || e.y < top) this.closePanel();
       } else if (e.key && e.kind === 'down') {
-        this.panelButtons[1]?.onTap();
+        (this.panelButtons.find((b) => b.label === '시작!') ?? this.panelButtons[0])?.onTap();
       } else if (e.kind === 'cancel' && e.key) this.closePanel();
       return;
     }

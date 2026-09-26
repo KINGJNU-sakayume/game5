@@ -1,6 +1,6 @@
 // 플레이/연습 세션: 곡 재생, 시계, 입력 → 판정, 자동 플레이
 import { audio, renderSong } from './audio';
-import { ChartBuilder, type Chart, type Cue, type InputKind } from './chart';
+import { ChartBuilder, type Chart, type Cue, type InputKind, type Marker } from './chart';
 import { Judge, type ScoreResult } from './judge';
 import type { Frame, GameDef, GameInput, Scene, SceneCtx, SceneMode } from './game';
 import type { RawInput } from './input';
@@ -113,15 +113,15 @@ abstract class BaseSession {
     this.auto = new AutoPlayer(this.spb);
   }
 
-  protected makeScene(cues: Cue[], chart: Chart | null, mode: SceneMode) {
+  protected makeScene(cues: Cue[], markers: Marker[], segments: Chart['segments'], mode: SceneMode) {
     this.sc = {
       game: this.def.id,
       bpm: this.def.bpm,
       spb: this.spb,
       beatsPerBar: this.def.beatsPerBar ?? 4,
       cues,
-      markers: chart ? chart.markers : [],
-      segments: chart ? chart.segments : [],
+      markers,
+      segments,
       mode,
       sfx: (name, midi = 0, vel = 1, pan = 0) => audio.sfx(name, midi, vel, 0, pan),
       holding: () => this.holdingFn() || this.auto.hold,
@@ -240,7 +240,7 @@ export class PlaySession extends BaseSession {
     this.perfectMode = !!opts.perfect;
     this.autoplay = !!opts.autoplay;
     this.rate = opts.rate ?? 1;
-    this.makeScene(this.judge.cues, this.chart, 'play');
+    this.makeScene(this.judge.cues, this.chart.markers, this.chart.segments, 'play');
   }
 
   async load(): Promise<void> {
@@ -344,6 +344,7 @@ interface Iter {
   start: number; // 곡 시각
   src: AudioBufferSourceNode | null;
   cues: Cue[];
+  markers: Marker[];
 }
 
 /** 연습 세션: 단계별로 짧은 루프를 반복, 성공 횟수를 채우면 다음 단계 */
@@ -363,6 +364,7 @@ export class PracticeSession extends BaseSession {
   onStepDone: ((step: number) => void) | null = null;
   onDone: (() => void) | null = null;
   readonly cues: Cue[];
+  readonly markers: Marker[] = [];
 
   constructor(def: GameDef, opts: { autoplay?: boolean; holding: () => boolean; rate?: number }) {
     super(def, opts.holding);
@@ -374,7 +376,7 @@ export class PracticeSession extends BaseSession {
       for (const c of chart.cues) this.kinds.add(c.input);
       this.loops.push({ chart, buffer: null, len: def.practice[i].beats * this.spb });
     }
-    this.makeScene(this.cues, null, 'practice');
+    this.makeScene(this.cues, this.markers, [], 'practice');
     this.judge.onJudge = (c) => this.countJudge(c);
   }
 
@@ -444,26 +446,33 @@ export class PracticeSession extends BaseSession {
     let src: AudioBufferSourceNode | null = null;
     if (loop.buffer && this.songGain && audio.ctx) src = audio.playBuffer(loop.buffer, this.startCtx + start / this.rate, this.songGain, false, this.rate);
     const off = start;
-    const cues = loop.chart.cues.map((c) => ({
+    const shiftData = (data: Record<string, unknown> | undefined) => {
+      if (!data) return data;
+      const d: Record<string, unknown> = { ...data };
+      for (const key of Object.keys(d)) {
+        const v = d[key];
+        if (typeof v !== 'number') continue;
+        if (key.endsWith('Beat')) d[key] = v + off / this.spb;
+        else if (key.endsWith('T')) d[key] = v + off;
+      }
+      return d;
+    };
+    const cues: Cue[] = loop.chart.cues.map((c) => ({
       ...c,
       id: this.nextId++,
       t: c.t + off,
       beat: c.beat + off / this.spb,
-      data: { ...c.data, ...(typeof c.data.pressT === 'number' ? { pressT: c.data.pressT + off } : {}), iter: k, step: this.step },
+      data: { ...shiftData(c.data), iter: k, step: this.step },
       grade: undefined,
       dt: undefined,
       at: undefined,
       ix: undefined,
     }));
-    // 다른 박 기반 데이터도 이동
-    for (const c of cues) {
-      for (const key of Object.keys(c.data)) {
-        if (key.endsWith('Beat') && typeof c.data[key] === 'number') c.data[key] += off / this.spb;
-        if (key.endsWith('T') && key !== 'pressT' && typeof c.data[key] === 'number') c.data[key] += off;
-      }
-    }
+    const markers: Marker[] = loop.chart.markers.map((m) => ({ ...m, t: m.t + off, beat: m.beat + off / this.spb, data: shiftData(m.data) }));
     this.judge.add(cues);
-    this.iters.push({ k, start, src, cues });
+    this.markers.push(...markers);
+    this.markers.sort((a, b) => a.t - b.t);
+    this.iters.push({ k, start, src, cues, markers });
   }
 
   private countJudge(c: Cue) {
@@ -490,11 +499,12 @@ export class PracticeSession extends BaseSession {
     if (this.phase === 'done') return;
     const loop = this.loops[this.step];
     // 곧 시작할 반복 예약
-    if (now >= this.stepStart - 1.2) {
+    if (now >= this.stepStart - 3.2) {
       if (this.phase === 'intro' || this.phase === 'between') {
         if (now >= this.stepStart) this.phase = 'loop';
       }
-      const k = Math.max(0, Math.floor((now + 1.0 - this.stepStart) / loop.len));
+      const ahead = Math.max(1.0, Math.min(loop.len * 0.9, 3));
+      const k = Math.max(0, Math.floor((now + ahead - this.stepStart) / loop.len));
       const lastK = this.iters.length ? this.iters[this.iters.length - 1].k : -1;
       if (!this.stepComplete && k > lastK) this.schedule(lastK + 1);
     }
@@ -518,7 +528,14 @@ export class PracticeSession extends BaseSession {
           }
           const ids = new Set(it.cues.map((c) => c.id));
           if (ids.size) this.judge.remove((c) => ids.has(c.id));
+          if (it.markers.length) {
+            const ms = new Set(it.markers);
+            const keep = this.markers.filter((m) => !ms.has(m));
+            this.markers.length = 0;
+            this.markers.push(...keep);
+          }
           it.cues = [];
+          it.markers = [];
           it.src = null;
         }
       }

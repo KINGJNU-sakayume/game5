@@ -415,23 +415,14 @@ export const penguin: GameDef = {
       },
     },
     {
-      text: '"삐익!" 하면 엇박자로!\n박과 박 사이에 탭해요.',
-      beats: 12,
-      need: 8,
+      text: '"삑삑삑삑 삐익!" 하면 엇박자로!\n"삑삑삑 삐익!" 하면 다시 정박자로!',
+      beats: 16,
+      need: 10,
       build(b) {
         steps(b, 0, 'on');
         toOff(b, 1);
         steps(b, 2, 'off');
-      },
-    },
-    {
-      text: '엇박자에서 "삐익!" 하면\n다시 정박자로 돌아와요.',
-      beats: 12,
-      need: 8,
-      build(b) {
-        steps(b, 0, 'off');
-        toOn(b, 1);
-        steps(b, 2, 'on');
+        toOn(b, 3);
       },
     },
   ],

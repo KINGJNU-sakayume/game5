@@ -115,7 +115,8 @@ export class PlayScreen implements Screen {
       }),
       button({ x: 48, y: cy + 120, w: bw, h: 58, label: '그만두기', color: '#ff6b8b', onTap: () => this.quit() }),
     ];
-    if (inPractice) {
+    // 처음 하는 연습은 원작처럼 건너뛸 수 없음
+    if (inPractice && record(this.def.id).practiced) {
       list.splice(
         1,
         0,
